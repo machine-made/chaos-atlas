@@ -143,13 +143,13 @@ export function calculateDirectionalCMLIteration(
   
   // Apply the logistic map and coupling
   for (let i = 0; i < n; i++) {
-    const right = (i + 1) % n; // Only couple to the right neighbor
+    const left = (i - 1 + n) % n; // Couple to the left (upstream) neighbor per Kaneko open-flow convention
     
     // Logistic map function
     const f = (x: number) => r * x * (1 - x);
     
     // Directional coupling
-    newLattice[i] = (1 - epsilon) * f(lattice[i]) + epsilon * f(lattice[right]);
+    newLattice[i] = (1 - epsilon) * f(lattice[i]) + epsilon * f(lattice[left]);
     
     // Ensure values stay in [0, 1]
     newLattice[i] = Math.max(0, Math.min(1, newLattice[i]));
