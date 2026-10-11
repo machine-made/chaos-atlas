@@ -127,7 +127,7 @@ components/
 lib/
   maps/                  # Pure calculation functions (no React)
   themes/                # Theme config, CSS variable bridge
-tests/                   # 184 tests (unit, integration, a11y, e2e)
+tests/                   # unit, integration, a11y and e2e tests
 ```
 
 ## Adding a New Map
