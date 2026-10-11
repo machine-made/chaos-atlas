@@ -31,7 +31,7 @@ classifiers = [
     "Topic :: Scientific/Engineering :: Physics",
     "Typing :: Typed",
 ]
-dependencies = ["numpy>=2.3"]
+dependencies = ["numpy>=2.3.2"]
 
 [project.urls]
 Homepage = "https://openfluids.github.io/chaos-atlas/"
