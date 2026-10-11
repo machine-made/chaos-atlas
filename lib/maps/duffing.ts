@@ -280,10 +280,9 @@ export function calculateDuffingPotential(
   numPoints: number = 200
 ): { x: number; potential: number }[] {
   const points: { x: number; potential: number }[] = [];
-  const step = (xRange.max - xRange.min) / numPoints;
 
-  for (let i = 0; i <= numPoints; i++) {
-    const x = xRange.min + i * step;
+  for (let i = 0; i < numPoints; i++) {
+    const x = numPoints === 1 ? xRange.min : xRange.min + (i * (xRange.max - xRange.min)) / (numPoints - 1);
     const potential = -0.5 * a * x * x + 0.25 * x * x * x * x;
     points.push({ x, potential });
   }
@@ -307,7 +306,9 @@ export function calculateDuffingBifurcation(
 ): { paramValue: number; x: number; y: number }[] {
   const points: { paramValue: number; x: number; y: number }[] = [];
 
-  for (let value = paramRange.min; value <= paramRange.max; value += paramRange.step) {
+  const steps = Math.max(1, Math.round((paramRange.max - paramRange.min) / paramRange.step) + 1);
+  for (let i = 0; i < steps; i++) {
+    const value = steps === 1 ? paramRange.min : paramRange.min + (i * (paramRange.max - paramRange.min)) / (steps - 1);
     const params = { ...fixedParams, [param]: value } as { a: number; b: number };
     const trajectory = calculateDuffingMap({ x: 0.1, y: 0.1 }, params, iterations, 500);
 

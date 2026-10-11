@@ -99,7 +99,9 @@ export function calculateIkedaBifurcation(
 ): { paramValue: number; x: number; y: number }[] {
   const points: { paramValue: number; x: number; y: number }[] = [];
 
-  for (let value = paramRange.min; value <= paramRange.max; value += paramRange.step) {
+  const steps = Math.max(1, Math.round((paramRange.max - paramRange.min) / paramRange.step) + 1);
+  for (let i = 0; i < steps; i++) {
+    const value = steps === 1 ? paramRange.min : paramRange.min + (i * (paramRange.max - paramRange.min)) / (steps - 1);
     const params = { ...fixedParams, [param]: value } as { a: number; b: number; c: number; d: number };
     const trajectory = calculateIkedaMap({ x: 0.1, y: 0.1 }, params, iterations, 500);
 

@@ -92,7 +92,9 @@ export function calculateTentBifurcation(
 ): TentPoint[] {
   const points: TentPoint[] = [];
 
-  for (let alpha = alphaRange.min; alpha <= alphaRange.max; alpha += alphaStep) {
+  const steps = Math.max(1, Math.round((alphaRange.max - alphaRange.min) / alphaStep) + 1);
+  for (let i = 0; i < steps; i++) {
+    const alpha = steps === 1 ? alphaRange.min : alphaRange.min + (i * (alphaRange.max - alphaRange.min)) / (steps - 1);
     let x = x0;
 
     // Transient iterations

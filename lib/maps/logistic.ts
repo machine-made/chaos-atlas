@@ -81,10 +81,8 @@ export function calculateLogisticBifurcation(
   iterations: number = 100
 ): LogisticPoint[] {
   const points: LogisticPoint[] = [];
-  const rStep = (rMax - rMin) / rSteps;
-  
-  for (let rIndex = 0; rIndex <= rSteps; rIndex++) {
-    const r = rMin + rIndex * rStep;
+  for (let rIndex = 0; rIndex < rSteps; rIndex++) {
+    const r = rSteps === 1 ? rMin : rMin + (rIndex * (rMax - rMin)) / (rSteps - 1);
     // x0 = 0.5 degenerates to the single value {0} at r = 4 (0.5 -> 1 -> 0
     // -> 0 -> ...), which would draw a misleadingly sparse column in the
     // bifurcation diagram. Use a generic seed instead.
