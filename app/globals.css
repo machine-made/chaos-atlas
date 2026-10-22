@@ -1,0 +1,220 @@
+/* CSS requires @import to precede every rule except @charset and @layer, and
+   the @tailwind directives below expand into rules. These must stay first. */
+@import '../styles/themes/tron.css' layer(base);
+@import '../styles/animations/glow-effects.css' layer(base);
+
+@import 'tailwindcss';
+
+@theme {
+  --background-image-gradient-radial: radial-gradient(var(--tw-gradient-stops));
+  --background-image-gradient-conic: conic-gradient(
+    from 180deg at 50% 50%,
+    var(--tw-gradient-stops)
+  );
+}
+
+/*
+ * Theme-aware Tailwind palette overrides.
+ *
+ * Use `@theme inline` (not plain `@theme`) so utilities emit the runtime var
+ * reference directly — e.g. color: var(--accent-cyan) — instead of an intermediate
+ * --color-* that would be resolved at build time and ignore applyThemeCSSProperties.
+ * All sources are OPAQUE bridged vars so opacity modifiers (/20, /30, …) apply
+ * via color-mix once, not on an already-transparent value.
+ *
+ * Deliberately NOT mapped this cycle (solid accent button BGs → white-on-white
+ * under Black & White next to text-white): cyan-600, cyan-700, purple-600, green-600.
+ */
+@theme inline {
+  /* --accent-cyan (theme primary) */
+  --color-cyan-300: var(--accent-cyan);
+  --color-cyan-400: var(--accent-cyan);
+  --color-cyan-500: var(--accent-cyan);
+
+  /* --text-secondary */
+  --color-gray-300: var(--text-secondary);
+
+  /* --text-muted */
+  --color-gray-400: var(--text-muted);
+  --color-gray-500: var(--text-muted);
+
+  /*
+   * gray-600/700/800/900 deliberately NOT mapped.
+   * --bg-secondary is blend(background → border, 0.18), tuned for card FILLS,
+   * and has nowhere near the separation an affordance needs (slider track,
+   * inactive border). A themed surface ladder is a separate cycle.
+   */
+
+  /* surfaces / labels */
+  --color-black: var(--bg-primary);
+  --color-white: var(--text-primary);
+
+  /* --accent-magenta (theme secondary) */
+  --color-purple-400: var(--accent-magenta);
+  --color-purple-500: var(--accent-magenta);
+  --color-pink-400: var(--accent-magenta);
+  --color-pink-500: var(--accent-magenta);
+
+  /* --accent-orange (theme tertiary) */
+  --color-orange-400: var(--accent-orange);
+  --color-orange-500: var(--accent-orange);
+  --color-yellow-400: var(--accent-orange);
+  --color-yellow-500: var(--accent-orange);
+  --color-yellow-900: var(--accent-orange);
+
+  /* --viz-tertiary */
+  --color-green-500: var(--viz-tertiary);
+
+  /* --accent-red (theme warning) — used if/when red-* appears in source */
+  --color-red-400: var(--accent-red);
+  --color-red-500: var(--accent-red);
+}
+
+/*
+  The default border color has changed to `currentcolor` in Tailwind CSS v4,
+  so we've added these compatibility styles to make sure everything still
+  looks the same as it did with Tailwind CSS v3.
+
+  If we ever want to remove these styles, we need to add an explicit border
+  color utility to any element that depends on these defaults.
+*/
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentcolor);
+  }
+}
+
+:root {
+  /*
+   * Legacy custom properties — defaults only. At runtime every var below is
+   * overwritten by applyThemeCSSProperties (lib/themes/theme-utils.ts) from
+   * the active ThemeColors. Alphas on rgba slots are preserved via hexWithAlpha.
+   * None of these are deliberately theme-independent.
+   */
+  --bg-primary: #1a1a2e;
+  --bg-secondary: #16213e;
+  --bg-card: rgba(22, 33, 62, 0.7);
+  --bg-header: rgba(26, 26, 46, 0.8);
+  --bg-footer: rgba(26, 26, 46, 0.8);
+
+  --text-primary: #e6f1ff;
+  --text-secondary: #a2d2ff;
+  --text-accent: #ff6b6b;
+  --text-muted: #4a5568;
+
+  --border-primary: rgba(162, 210, 255, 0.3);
+  --border-secondary: rgba(255, 107, 107, 0.3);
+  --border-focus: #a2d2ff;
+
+  --viz-primary: #a2d2ff;
+  --viz-secondary: #ff6b6b;
+  --viz-tertiary: #ffd166;
+  --viz-accent: #e6f1ff;
+  --viz-grid: rgba(162, 210, 255, 0.2);
+  --viz-point: #ff6b6b;
+  --viz-line: #a2d2ff;
+  --viz-area: rgba(255, 107, 107, 0.3);
+
+  /* Accent colors used by D3 visualizations — bridged from theme in theme-utils.ts */
+  --accent-cyan: #00ffff;
+  --accent-orange: #ff7f00;
+  --accent-magenta: #ff00ff;
+  --accent-red: #ff4444;
+}
+
+body {
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+}
+
+/* Theme-aware component styles */
+.card {
+  background-color: var(--bg-card);
+  border-color: var(--border-primary);
+}
+
+.header {
+  background-color: var(--bg-header);
+  border-color: var(--border-primary);
+}
+
+.footer {
+  background-color: var(--bg-footer);
+  border-color: var(--border-primary);
+}
+
+/* Slider thumb styling for range inputs */
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--viz-primary);
+  border: none;
+  cursor: pointer;
+}
+
+.slider::-moz-range-thumb {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--viz-primary);
+  border: none;
+  cursor: pointer;
+}
+
+/* Focus indicator for accessibility */
+.slider:focus-visible {
+  outline: 2px solid var(--viz-primary);
+  outline-offset: 2px;
+}
+
+/* Responsive design for macOS */
+@media (min-width: 768px) {
+  .container {
+    max-width: 100%;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .container {
+    max-width: 1024px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+}
+
+/* macOS-specific styles */
+@media screen and (-webkit-min-device-pixel-ratio: 2) {
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  
+  input, button, select {
+    font-feature-settings: "kern";
+    font-kerning: normal;
+  }
+}
+
+/* Touch-friendly controls for mobile and tablets */
+@media (pointer: coarse) {
+  button,
+  select,
+  input[type="range"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+  
+  input[type="range"] {
+    height: 44px;
+  }
+}

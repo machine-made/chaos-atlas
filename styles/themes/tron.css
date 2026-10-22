@@ -1,0 +1,102 @@
+/* Tron Theme CSS Custom Properties */
+:root {
+  /* Background Colors */
+  --tron-bg: #000000;
+  --tron-bg-secondary: #0a0a0a;
+  --tron-bg-tertiary: #1a1a1a;
+
+  /* Neon Colors - Vintage Tron Palette */
+  --tron-cyan: #00ffff;
+  --tron-cyan-bright: #40ffff;
+  --tron-cyan-dim: #00cccc;
+
+  --tron-orange: #ff7f00;
+  --tron-orange-bright: #ff9f20;
+  --tron-orange-dim: #cc6600;
+
+  --tron-magenta: #ff00ff;
+  --tron-magenta-bright: #ff40ff;
+  --tron-magenta-dim: #cc00cc;
+
+  --tron-yellow: #ffff00;
+  --tron-yellow-bright: #ffff40;
+  --tron-yellow-dim: #cccc00;
+
+  /* Text Colors */
+  --tron-text-primary: #ffffff;
+  --tron-text-secondary: #cccccc;
+  --tron-text-muted: #888888;
+
+  /* Border Colors */
+  --tron-border: #333333;
+  --tron-border-light: #555555;
+  --tron-border-dark: #222222;
+
+  /* Glow Effects — names kept; values come from getLegacyThemeCSSProperties
+     (theme.glow + ThemeColors). Pre-hydrate fallback is none so B&W is not
+     painted with a hardcoded cyan halo before JS runs. */
+  --tron-glow-cyan: none;
+  --tron-glow-orange: none;
+  --tron-glow-magenta: none;
+  --tron-glow-yellow: none;
+  --tron-glow-cyan-hover: none;
+  --tron-glow-orange-hover: none;
+  --tron-glow-magenta-hover: none;
+  --tron-glow-yellow-hover: none;
+
+  /* Animation Durations */
+  --tron-transition-fast: 0.15s;
+  --tron-transition-normal: 0.3s;
+  --tron-transition-slow: 0.5s;
+
+  /* Easing Functions */
+  --tron-ease-out: ease-out;
+  --tron-ease-in-out: ease-in-out;
+  --tron-linear: linear;
+
+  /* Spacing */
+  --tron-spacing-xs: 0.25rem;
+  --tron-spacing-sm: 0.5rem;
+  --tron-spacing-md: 1rem;
+  --tron-spacing-lg: 1.5rem;
+  --tron-spacing-xl: 2rem;
+
+  /* Border Radius */
+  --tron-radius-sm: 0.25rem;
+  --tron-radius-md: 0.5rem;
+  --tron-radius-lg: 0.75rem;
+  --tron-radius-xl: 1rem;
+
+  /* Shadows */
+  --tron-shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+  --tron-shadow-md: 0 4px 6px rgba(0, 0, 0, 0.3);
+  --tron-shadow-lg: 0 10px 15px rgba(0, 0, 0, 0.3);
+
+  /* Accessibility Overrides */
+  --tron-high-contrast-filter: contrast(1.2);
+  --tron-reduced-motion: none;
+}
+
+/* High Contrast Mode Override — borders only; glow is theme-map owned */
+@media (prefers-contrast: high) {
+  :root {
+    --tron-border: #666666;
+    --tron-border-light: #888888;
+    --tron-border-dark: #444444;
+  }
+}
+
+/* Reduced Motion Override */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --tron-reduced-motion: none;
+    --tron-transition-fast: 0s;
+    --tron-transition-normal: 0s;
+    --tron-transition-slow: 0s;
+  }
+}
+
+/* Dark theme base styles */
+[data-theme="tron"] {
+  color-scheme: dark;
+}
