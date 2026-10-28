@@ -42,7 +42,7 @@ export default function AboutPage() {
               systems and spatiotemporal coupled dynamics.
             </p>
             <p className="text-gray-300 leading-relaxed">
-              Source code is freely available on <Link href="https://github.com/openfluids/chaos-atlas" className="text-cyan-400 hover:text-cyan-300 transition-colors">GitHub</Link>.
+              Source code is freely available on <Link href="https://github.com/machine-made/chaos-atlas" className="text-cyan-400 hover:text-cyan-300 transition-colors">GitHub</Link>.
             </p>
           </section>
 

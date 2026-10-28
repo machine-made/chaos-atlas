@@ -4,7 +4,7 @@ Iterated maps, coupled map lattices, and Lyapunov exponents for chaotic dynamica
 systems. NumPy arrays in, NumPy arrays out.
 
 This is the Python companion to the [Chaos Atlas web
-explorer](https://openfluids.github.io/chaos-atlas/), which visualises the same
+explorer](https://machine-made.github.io/chaos-atlas/), which visualises the same
 systems interactively.
 
 ## Install
@@ -79,7 +79,7 @@ uv run pytest
 
 ## License
 
-Apache-2.0. Copyright 2026 Ricardo A S Frantz.
+Apache-2.0. Copyright 2026 Ricardo Frantz.
 
 ## Disclaimer
 

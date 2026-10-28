@@ -1,6 +1,6 @@
-![chaos-atlas banner](https://raw.githubusercontent.com/openfluids/chaos-atlas/main/assets/readme-banner-v3.jpg)
+![chaos-atlas banner](https://raw.githubusercontent.com/machine-made/chaos-atlas/main/assets/readme-banner-v3.jpg)
 
-[![CI](https://github.com/openfluids/chaos-atlas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/openfluids/chaos-atlas/actions/workflows/ci.yml)
+[![CI](https://github.com/machine-made/chaos-atlas/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/machine-made/chaos-atlas/actions/workflows/ci.yml)
 [![PyPI](https://img.shields.io/pypi/v/chaos-atlas.svg)](https://pypi.org/project/chaos-atlas/)
 [![Python](https://img.shields.io/pypi/pyversions/chaos-atlas.svg)](https://pypi.org/project/chaos-atlas/)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
@@ -11,7 +11,7 @@ coupled-map-lattice patterns, across ten iterated maps. The map kernels are also
 published as a standalone Python package, so the same systems can be driven from
 a script.
 
-**Live demo:** [openfluids.github.io/chaos-atlas](https://openfluids.github.io/chaos-atlas/)
+**Live demo:** [machine-made.github.io/chaos-atlas](https://machine-made.github.io/chaos-atlas/)
 
 ## Maps
 
@@ -87,7 +87,7 @@ Source and full API in [`python/`](python/).
 ### Install and Run
 
 ```bash
-git clone https://github.com/openfluids/chaos-atlas.git
+git clone https://github.com/machine-made/chaos-atlas.git
 cd chaos-atlas
 npm install
 npm run dev
@@ -151,14 +151,14 @@ tests/                   # unit, integration, a11y and e2e tests
 
 Contributions are welcome, and questions and bug reports count. See
 [CONTRIBUTING.md](CONTRIBUTING.md) for setup and the checks CI runs, and the
-[openfluids Code of Conduct](https://github.com/openfluids/.github/blob/main/CODE_OF_CONDUCT.md)
+[machine-made Code of Conduct](https://github.com/machine-made/.github/blob/main/CODE_OF_CONDUCT.md)
 for how we work together.
 
 ## License
 
 Licensed under the Apache License, Version 2.0. See [LICENSE](LICENSE) and [NOTICE](NOTICE).
 
-Copyright 2026 Ricardo A S Frantz.
+Copyright 2026 Ricardo Frantz.
 
 Releases up to and including v0.1.0 were documented in this README as MIT-licensed;
 that grant is not withdrawn for code obtained under it. Apache-2.0 applies from v0.1.0 onward.

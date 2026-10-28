@@ -4,7 +4,7 @@ Contributions are genuinely welcome, and that includes the ones that are not
 code. A bug report, a system whose parameters are wrong, a plot that renders
 badly on your screen, an explanatory paragraph that did not explain — all of
 those are worth opening an
-[issue](https://github.com/openfluids/chaos-atlas/issues) for.
+[issue](https://github.com/machine-made/chaos-atlas/issues) for.
 
 If you are unsure whether something is worth reporting, it probably is. Open the
 issue.
@@ -15,7 +15,7 @@ chaos-atlas is a Next.js site with a small Python component that generates the
 data behind the figures.
 
 ```bash
-git clone https://github.com/openfluids/chaos-atlas.git
+git clone https://github.com/machine-made/chaos-atlas.git
 cd chaos-atlas
 npm ci
 npm run dev
@@ -88,11 +88,11 @@ Only the ones that are actually enforced:
 ## Conduct and licence
 
 Everyone taking part is asked to follow the
-[openfluids Code of Conduct](https://github.com/openfluids/.github/blob/main/CODE_OF_CONDUCT.md).
+[machine-made Code of Conduct](https://github.com/machine-made/.github/blob/main/CODE_OF_CONDUCT.md).
 It is short.
 
 chaos-atlas is licensed under Apache-2.0, and contributions are accepted under
 the same licence. See `LICENSE` and `NOTICE`.
 
 Found a security problem? Please do not open a public issue — see the
-[security policy](https://github.com/openfluids/chaos-atlas/security/policy).
+[security policy](https://github.com/machine-made/chaos-atlas/security/policy).

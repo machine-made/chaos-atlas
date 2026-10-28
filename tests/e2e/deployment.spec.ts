@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Deployment Verification - E2E Tests', () => {
-  const deployedUrl = 'https://openfluids.github.io/chaos-atlas/';
+  const deployedUrl = 'https://machine-made.github.io/chaos-atlas/';
 
   test.beforeEach(async ({ page }) => {
     // Test the deployed GitHub Pages site
@@ -22,7 +22,7 @@ test.describe('Deployment Verification - E2E Tests', () => {
 
   test('deployed site loads correctly', async ({ page }) => {
     // Check we're on the correct domain
-    expect(page.url()).toContain('openfluids.github.io/chaos-atlas');
+    expect(page.url()).toContain('machine-made.github.io/chaos-atlas');
 
     // Check main heading loads
     const mainHeading = page.locator('h1');
