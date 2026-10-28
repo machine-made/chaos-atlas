@@ -1,0 +1,179 @@
+# Builds the vendored dynachaos WebAssembly package in CI and commits it back
+# to the branch that asked for it.
+#
+# Why CI builds it: the module must come from a clean, path-remapped build, and
+# a person's machine is exactly the place a local path would leak from. The
+# build, the path check and the copy run here, from the dynachaos commit named
+# in public/vendor/dynachaos-wasm/SOURCE_REF.
+#
+# To vendor a new dynachaos commit: branch off main as
+# vendor/dynachaos-wasm/<name>, write the 40-character commit into SOURCE_REF
+# and push. The workflow pushes one commit with the new files to the same
+# branch. Re-push (or run it by hand) to rebuild. Open the pull request after.
+#
+# It never runs on main or on a pull request, and it never force-pushes.
+name: Vendor dynachaos wasm
+
+on:
+  push:
+    branches: ["vendor/dynachaos-wasm/**"]
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "dynachaos commit to build (40 hex characters). Empty: read SOURCE_REF."
+        required: false
+        default: ""
+
+permissions:
+  contents: read
+
+# A newer push names a newer commit; the older build is no longer wanted.
+concurrency:
+  group: vendor-dynachaos-wasm-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  VENDOR_DIR: public/vendor/dynachaos-wasm
+  PYTHON_VERSION: "3.14"
+
+jobs:
+  vendor:
+    name: Build and vendor
+    # Only a vendor branch, and never a pull request: this job holds a write token.
+    if: >-
+      github.event_name != 'pull_request'
+      && startsWith(github.ref, 'refs/heads/vendor/dynachaos-wasm/')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout chaos-atlas
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # The build runs dynachaos code. The write token stays out of
+          # .git/config and enters only the push step.
+          persist-credentials: false
+
+      - name: Resolve the dynachaos commit
+        id: source
+        env:
+          INPUT_REF: ${{ inputs.ref }}
+        run: |
+          set -euo pipefail
+          ref="$INPUT_REF"
+          if [ -z "$ref" ]; then
+            ref="$(cat "$VENDOR_DIR/SOURCE_REF")"
+          fi
+          ref="$(printf '%s' "$ref" | tr -d '[:space:]')"
+          if ! printf '%s' "$ref" | grep -Eq '^[0-9a-f]{40}$'; then
+            echo "::error::The dynachaos ref must be a 40-character lowercase hex commit."
+            exit 1
+          fi
+          echo "sha=$ref" >> "$GITHUB_OUTPUT"
+
+      - name: Checkout dynachaos
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: machine-made/dynachaos
+          ref: ${{ steps.source.outputs.sha }}
+          path: dynachaos
+          persist-credentials: false
+
+      # The next two steps copy the setup of the dynachaos "WASM matches
+      # native" job, same pins.
+      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable @ 2026-07-26
+        with:
+          targets: wasm32-unknown-unknown
+
+      - name: Build the package
+        # The scripts use only the standard library, so no project sync.
+        # build_wasm_pkg.py installs the wasm-bindgen CLI at the version in
+        # rust/wasm/Cargo.lock and remaps source paths while it builds.
+        working-directory: dynachaos
+        run: uv run --no-project --python "$PYTHON_VERSION" python scripts/build_wasm_pkg.py
+
+      - name: No local path in the built package
+        working-directory: dynachaos
+        run: uv run --no-project --python "$PYTHON_VERSION" python scripts/check_wasm_paths.py pkg
+
+      - name: Check the package names the commit it was asked to build
+        env:
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          built="$(jq -r '.dynachaos.commit' dynachaos/pkg/package.json)"
+          if [ "$built" != "$SHA" ]; then
+            echo "::error::pkg/package.json names a different commit than SOURCE_REF."
+            exit 1
+          fi
+
+      - name: Copy the package into the vendor folder
+        # --delete drops files a new build no longer ships. PROVENANCE.md and
+        # SOURCE_REF are chaos-atlas's own and stay. Every other vendored file
+        # is a byte copy of pkg/.
+        run: |
+          set -euo pipefail
+          rsync -a --delete \
+            --exclude PROVENANCE.md --exclude SOURCE_REF \
+            dynachaos/pkg/ "$VENDOR_DIR/"
+
+      - name: Write SOURCE_REF and PROVENANCE.md
+        env:
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          printf '%s\n' "$SHA" > "$VENDOR_DIR/SOURCE_REF"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          vendor = Path(os.environ["VENDOR_DIR"])
+          pkg = json.loads((vendor / "package.json").read_text(encoding="utf-8"))
+          text = f"""# Provenance
+
+          Copy of `pkg/` from machine-made/dynachaos, built by the
+          `vendor-dynachaos-wasm` workflow so chaos-atlas can run the paper's
+          kernels without a Rust toolchain and without a local path in the module.
+
+          - Source commit: `{pkg['dynachaos']['commit']}` (also `dynachaos.commit` in `package.json` and the one line of `SOURCE_REF`)
+          - Build command: `uv run python scripts/build_wasm_pkg.py`
+          - wasm-bindgen: {pkg['dynachaos']['wasm_bindgen']}
+          - Package version: {pkg['version']} (`{pkg['name']}`)
+          - Path check: `scripts/check_wasm_paths.py pkg` passed in the same run
+
+          `dynachaos_wasm.js`, `dynachaos_wasm_bg.wasm`, `dynachaos_wasm.d.ts`,
+          `dynachaos_wasm_bg.wasm.d.ts`, `package.json`, `LICENSE`, and `README.md`
+          are unmodified copies of that `pkg/` directory. `PROVENANCE.md` and
+          `SOURCE_REF` are chaos-atlas's own and are not part of the upstream package.
+
+          To vendor another dynachaos commit, push a branch named
+          `vendor/dynachaos-wasm/<name>` with the new commit in `SOURCE_REF`.
+          The workflow builds it and pushes the files to that branch.
+          """
+          (vendor / "PROVENANCE.md").write_text(text, encoding="utf-8")
+          PY
+
+      - name: Commit and push when files changed
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          BRANCH: ${{ github.ref_name }}
+          SHA: ${{ steps.source.outputs.sha }}
+        run: |
+          set -euo pipefail
+          case "$BRANCH" in
+            vendor/dynachaos-wasm/*) ;;
+            *) echo "::error::Refusing to push to $BRANCH."; exit 1 ;;
+          esac
+          git add -A -- "$VENDOR_DIR"
+          if git diff --cached --quiet; then
+            echo "Vendored files already match $SHA. Nothing to commit."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "vendor: dynachaos-wasm @ $SHA" \
+            -m "Built by the vendor-dynachaos-wasm workflow. The path check passed in the same run."
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" "HEAD:refs/heads/${BRANCH}"
