@@ -97,6 +97,52 @@ export function apen_counts(traj, dim, r) {
 }
 
 /**
+ * Lyapunov exponent of the circle map at one `(A, D)`.
+ *
+ * This is `dynachaos.maps.circle_map.lyapunov_exponent`
+ * (`src/dynachaos/maps/circle_map.py:75`): both the transient and the
+ * measured stretch use the wrapped map
+ * `theta' = (theta + D + A sin(2 pi theta)) mod 1`, and a zero derivative
+ * contributes `-100` instead of `log(0)`. The devils-staircase Lyapunov
+ * panel draws `lambda(A)` at `D = 0.25`.
+ *
+ * # Returned layout
+ *
+ * One flat array of 3 values:
+ *
+ * - `[0]` = `n_transient` actually used.
+ * - `[1]` = `n_iter` actually used, which may be lower than requested when
+ *   the step budget binds.
+ * - `[2]` = `lambda`, the exponent.
+ *
+ * Read the header rather than assuming the values you passed were honoured.
+ * A kernel error — impossible after the clamps below — returns an empty
+ * array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a`: clamped to `[0, 0.25]`, the staircase sweep; a non-finite value
+ *   falls back to 0.
+ * - `d`: clamped to `[0, 1]`; a non-finite value falls back to 0.25, the
+ *   paper's D.
+ * - `theta0`: clamped to `[0, 1]`; a non-finite value falls back to 0.1.
+ * - `n_transient`: clamped to `[0, 20000]`; `n_iter` to `[1, 200000]`,
+ *   reduced further to respect the step budget.
+ * @param {number} a
+ * @param {number} d
+ * @param {number} n_transient
+ * @param {number} n_iter
+ * @param {number} theta0
+ * @returns {Float64Array}
+ */
+export function circle_map_lyapunov_sum(a, d, n_transient, n_iter, theta0) {
+    const ret = wasm.circle_map_lyapunov_sum(a, d, n_transient, n_iter, theta0);
+    var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v1;
+}
+
+/**
  * CML space-time tile: the field of a coupled-map lattice after a transient.
  *
  * These are the three models `dynachaos.cml.spatiotemporal` simulates
@@ -130,8 +176,11 @@ export function apen_counts(traj, dim, r) {
  * - `n_sites`: 2 to 512 sites; `n_transient`: 0 to 20000 steps; `n_record`:
  *   1 to 2048 rows, reduced further to respect the step budget.
  * - `x0`: the first `n_sites` entries are used; a missing or non-finite
- *   entry falls back to 0.5, then every entry clamps to `[0, 1]`, the
- *   interval the paper draws its initial field from.
+ *   entry falls back to 0.5, then every entry clamps to `[-1, 2]`. The
+ *   bound is wider than every observed orbit of the three models (A dips
+ *   to -0.11, B to -0.05, C to -0.75), so a play chunk continues from the
+ *   window's last row unchanged; a start far outside the invariant range
+ *   can diverge, and the page never supplies one.
  * @param {number} model
  * @param {number} eps
  * @param {number} n_sites
@@ -210,6 +259,233 @@ export function correlation_counts(traj, dim, r_values, theiler_window, use_cheb
 }
 
 /**
+ * Coupled-delayed Lyapunov tile: one 4-spectrum per `D_B`.
+ *
+ * This is `lyapunov_spectrum` run on `coupled_delayed` and its Jacobian
+ * (`src/dynachaos/maps/coupled_delayed.py:52`), with `D_A = D_B + 0.1` as
+ * `compute_lyapunov` fixes it. The paper sweeps `D_B` over `[2.1, 2.65]`
+ * at `eps` in `{1e-3, 5e-3, 1e-2}`.
+ *
+ * # Returned layout
+ *
+ * One flat array of `4 + n_DB * 4` values:
+ *
+ * - `[0]` = `n_DB` actually used.
+ * - `[1]` = `n_transient` actually used.
+ * - `[2]` = `n_iter` actually used, which may be lower than requested when
+ *   the step budget binds.
+ * - `[3]` = 4, the spectrum width.
+ * - `[4 ..]` = the spectra, `D_B`-major: four exponents per `D_B`, largest
+ *   first.
+ *
+ * Read the header rather than assuming the values you passed were honoured.
+ * A kernel error — impossible after the clamps below — returns an empty
+ * array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a`: clamped to `[0, 1]`; a non-finite value falls back to 0.4.
+ * - `db_min`, `db_max`: clamped to `[2.1, 2.65]`, the paper sweep; a
+ *   non-finite value falls back to the matching endpoint.
+ * - `eps`: clamped to `[1e-3, 1e-2]`, the paper's epsilon trio; a
+ *   non-finite value falls back to 5e-3.
+ * - `n_DB`: clamped to `[1, 128]`; `n_transient` to `[0, 20000]`; `n_iter`
+ *   to `[1, 200000]`, reduced further to respect the step budget.
+ * - `state0`: the first four entries are used; a missing or non-finite
+ *   component falls back to 0.5, then every component clamps to `[-4, 4]`.
+ * @param {number} a
+ * @param {number} db_min
+ * @param {number} db_max
+ * @param {number} n_db
+ * @param {number} eps
+ * @param {number} n_transient
+ * @param {number} n_iter
+ * @param {Float64Array} state0
+ * @returns {Float64Array}
+ */
+export function coupled_delayed_lyapunov_tile(a, db_min, db_max, n_db, eps, n_transient, n_iter, state0) {
+    const ptr0 = passArrayF64ToWasm0(state0, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.coupled_delayed_lyapunov_tile(a, db_min, db_max, n_db, eps, n_transient, n_iter, ptr0, len0);
+    var v2 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v2;
+}
+
+/**
+ * Coupled-delayed projection tile: one `(x, z)` trajectory per `D_B`.
+ *
+ * Mirrors `compute_projections` (`src/dynachaos/maps/coupled_delayed.py:123`)
+ * with `D_A = D_B + 0.1`. Python passes no `diverged_fn`. This kernel does
+ * the same: it records every requested `(x, z)` sample, including non-finite
+ * values, and does not apply a magnitude gate.
+ *
+ * # Returned layout
+ *
+ * `[n_DB, n_plot, n_transient, 2, x_0, z_0, ...]`, D-major projected pairs.
+ * A kernel error returns an empty array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a`: clamped to `[0, 1]`; a non-finite value falls back to `0.4`.
+ * - `db_min`, `db_max`: clamped to `[2.1, 2.65]`; a non-finite value falls
+ *   back to the matching endpoint.
+ * - `eps`: clamped to `[1e-3, 1e-2]`; a non-finite value falls back to `5e-3`.
+ * - `n_DB`: clamped to `[1, 32]`; `n_transient` to `[0, 20000]`; `n_plot` to
+ *   `[1, 4096]`, then the pair shrinks to respect the step budget.
+ * - `state0`: the first four entries are used; a missing or non-finite
+ *   component falls back to `0.5`, then every component clamps to `[-4, 4]`.
+ * @param {number} a
+ * @param {number} db_min
+ * @param {number} db_max
+ * @param {number} n_db
+ * @param {number} eps
+ * @param {number} n_transient
+ * @param {number} n_plot
+ * @param {Float64Array} state0
+ * @returns {Float64Array}
+ */
+export function coupled_delayed_projection_tile(a, db_min, db_max, n_db, eps, n_transient, n_plot, state0) {
+    const ptr0 = passArrayF64ToWasm0(state0, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.coupled_delayed_projection_tile(a, db_min, db_max, n_db, eps, n_transient, n_plot, ptr0, len0);
+    var v2 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v2;
+}
+
+/**
+ * Coupled-logistic attractor tile: one `(x, y)` trajectory per `A` at fixed `D`.
+ *
+ * Mirrors `compute_attractors` (`src/dynachaos/maps/coupled_logistic.py:265`).
+ * Python passes no `diverged_fn`. This kernel does the same: it records every
+ * requested sample, including non-finite values, and does not apply a
+ * magnitude gate.
+ *
+ * # Returned layout
+ *
+ * `[n_A, n_plot, n_transient, 2, x_0, y_0, ...]`, A-major `(x, y)` pairs.
+ * A kernel error returns an empty array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a_min`, `a_max`: clamped to `[0.5, 1.65]`; a non-finite value falls back
+ *   to the matching endpoint.
+ * - `d`: clamped to `[0, 0.3]`; a non-finite value falls back to `0.1`.
+ * - `n_A`: clamped to `[1, 64]`; `n_transient` to `[0, 20000]`; `n_plot` to
+ *   `[1, 4096]`, then the pair shrinks to respect the step budget.
+ * - `x0`, `y0`: a non-finite value falls back to `(0.1, 0.2)`, then each
+ *   component clamps to `[-1, 1]`.
+ * @param {number} a_min
+ * @param {number} a_max
+ * @param {number} n_a
+ * @param {number} d
+ * @param {number} n_transient
+ * @param {number} n_plot
+ * @param {number} x0
+ * @param {number} y0
+ * @returns {Float64Array}
+ */
+export function coupled_logistic_attractor_tile(a_min, a_max, n_a, d, n_transient, n_plot, x0, y0) {
+    const ret = wasm.coupled_logistic_attractor_tile(a_min, a_max, n_a, d, n_transient, n_plot, x0, y0);
+    var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v1;
+}
+
+/**
+ * Coupled-logistic basin grid, including the reference orbit the Python caller builds.
+ *
+ * The reference orbit is `_find_reference_orbit`
+ * (`src/dynachaos/maps/coupled_logistic.py:308`): `reference_transient` steps
+ * from `(x_ref, y_ref)`, then `period` recorded states, with no divergence
+ * check. The grid classification then calls the existing
+ * `coupled_logistic_basin_grid`, which marks `|x| > 100` or `|y| > 100` as
+ * label `-1`.
+ *
+ * # Returned layout
+ *
+ * `[n_x, n_y, n_transient, period, label_0, ...]`, row-major in y then x.
+ * Labels are `-1, 0, 1, 2` as f64. A kernel error returns an empty array.
+ *
+ * # Clamping
+ *
+ * - `a`: clamped to `[0.5, 1.65]`; a non-finite value falls back to `1.35344`.
+ * - `d`: clamped to `[0, 0.3]`; a non-finite value falls back to `0.1`.
+ * - `x_min`, `x_max`, `y_min`, `y_max`, `x_ref`, `y_ref`: clamped to `[-1, 1]`.
+ *   A non-finite range endpoint falls back to the paper domain `[-1, 1]`; a
+ *   non-finite reference component falls back to `(0.1, 0.6)`.
+ * - `n_x`, `n_y`: clamped to `[1, 512]`; `n_transient` to `[0, 20000]`;
+ *   `reference_transient` to `[0, 50000]`; `period` to `[1, 64]`. The pair
+ *   `(n_transient, reference_transient)` then shrinks until
+ *   `n_x * n_y * n_transient + reference_transient <= MAX_STEPS`.
+ * @param {number} a
+ * @param {number} d
+ * @param {number} x_min
+ * @param {number} x_max
+ * @param {number} n_x
+ * @param {number} y_min
+ * @param {number} y_max
+ * @param {number} n_y
+ * @param {number} n_transient
+ * @param {number} reference_transient
+ * @param {number} period
+ * @param {number} x_ref
+ * @param {number} y_ref
+ * @returns {Float64Array}
+ */
+export function coupled_logistic_basin_grid(a, d, x_min, x_max, n_x, y_min, y_max, n_y, n_transient, reference_transient, period, x_ref, y_ref) {
+    const ret = wasm.coupled_logistic_basin_grid(a, d, x_min, x_max, n_x, y_min, y_max, n_y, n_transient, reference_transient, period, x_ref, y_ref);
+    var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v1;
+}
+
+/**
+ * Coupled-logistic phase tile: asymmetry and largest-tangent growth on an (A, D) grid.
+ *
+ * Mirrors `compute_phase_diagram` (`src/dynachaos/maps/coupled_logistic.py:161`).
+ * The tangent step runs before the map step. `|x| > 10` or `|y| > 10` sets
+ * that state to NaN, and a cell with no valid sample is NaN.
+ *
+ * # Returned layout
+ *
+ * `[n_A, n_D, n_transient, n_sample, asym_0, lyap_0, ...]`, row-major in D
+ * then A, two values per cell. The header reports the values actually used.
+ * A kernel error — impossible after the clamps below — returns an empty
+ * array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a_min`, `a_max`: clamped to `[0.5, 1.65]`; a non-finite value falls back
+ *   to the matching endpoint.
+ * - `d_min`, `d_max`: clamped to `[0, 0.3]`; a non-finite value falls back to
+ *   the matching endpoint.
+ * - `n_A`, `n_D`: clamped to `[1, 512]`; `n_transient` to `[0, 20000]`;
+ *   `n_sample` to `[1, 200000]`, then both counts shrink until
+ *   `n_A * n_D * (n_transient + n_sample) <= MAX_STEPS`.
+ * - `x0`, `y0`: a non-finite value falls back to `(0.1, 0.2)`, then each
+ *   component clamps to `[-1, 1]`.
+ * @param {number} a_min
+ * @param {number} a_max
+ * @param {number} n_a
+ * @param {number} d_min
+ * @param {number} d_max
+ * @param {number} n_d
+ * @param {number} n_transient
+ * @param {number} n_sample
+ * @param {number} x0
+ * @param {number} y0
+ * @returns {Float64Array}
+ */
+export function coupled_logistic_phase_tile(a_min, a_max, n_a, d_min, d_max, n_d, n_transient, n_sample, x0, y0) {
+    const ret = wasm.coupled_logistic_phase_tile(a_min, a_max, n_a, d_min, d_max, n_d, n_transient, n_sample, x0, y0);
+    var v1 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v1;
+}
+
+/**
  * Delayed-logistic attractor tile: one `(x, y)` trajectory per D value.
  *
  * This is the map `dynachaos.maps.delayed_logistic` iterates
@@ -263,17 +539,67 @@ export function delayed_logistic_attractor_tile(a, d_min, d_max, n_d, n_transien
 }
 
 /**
+ * Delayed-logistic Lyapunov tile: one 2-spectrum per `D`.
+ *
+ * This is `lyapunov_spectrum` (`src/dynachaos/diagnostics/lyapunov.py:76`)
+ * run on `delayed_logistic` (`src/dynachaos/maps/delayed_logistic.py:82`)
+ * and its Jacobian. The Lyapunov figure sweeps `D` over `[1.3, 2.5]`
+ * (`src/dynachaos/maps/delayed_logistic.py:162`).
+ *
+ * # Returned layout
+ *
+ * One flat array of `4 + n_D * 2` values:
+ *
+ * - `[0]` = `n_D` actually used.
+ * - `[1]` = `n_transient` actually used.
+ * - `[2]` = `n_iter` actually used, which may be lower than requested when
+ *   the step budget binds.
+ * - `[3]` = 2, the spectrum width.
+ * - `[4 ..]` = the spectra, D-major: two exponents per `D`, largest first.
+ *
+ * Read the header rather than assuming the values you passed were honoured.
+ * A kernel error — impossible after the clamps below — returns an empty
+ * array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a`: clamped to `[0, 1]`; a non-finite value falls back to 0.3.
+ * - `d_min`, `d_max`: clamped to `[1.3, 2.5]`, the Lyapunov sweep; a
+ *   non-finite value falls back to the matching endpoint.
+ * - `n_D`: clamped to `[1, 512]`; `n_transient` to `[0, 20000]`; `n_iter`
+ *   to `[1, 200000]`, reduced further to respect the step budget.
+ * - `state0`: the first two entries are used; a missing or non-finite
+ *   component falls back to 0.5, then every component clamps to `[-4, 4]`.
+ * @param {number} a
+ * @param {number} d_min
+ * @param {number} d_max
+ * @param {number} n_d
+ * @param {number} n_transient
+ * @param {number} n_iter
+ * @param {Float64Array} state0
+ * @returns {Float64Array}
+ */
+export function delayed_logistic_lyapunov_tile(a, d_min, d_max, n_d, n_transient, n_iter, state0) {
+    const ptr0 = passArrayF64ToWasm0(state0, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.delayed_logistic_lyapunov_tile(a, d_min, d_max, n_d, n_transient, n_iter, ptr0, len0);
+    var v2 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v2;
+}
+
+/**
  * Diagonal line lengths of a recurrence matrix (determinism runs).
  *
  * This is the same estimator `dynachaos.diagnostics.recurrence` runs in
  * Python: `mask` is a row-major `u8` recurrence matrix of `side` rows and
  * `side` columns where any nonzero byte counts as recurrent, and the result
  * is the length of every run of recurrent cells along the super-diagonals
- * `k = 1 .. side` that meets `l_min`. The kernel is the run-length counter
- * `count_line_lengths`; this export gathers each super-diagonal into a
- * reusable buffer and hands it to that counter, which applies the same
- * run-length rule as the native kernel; `scripts/check_wasm_diagnostics.py`
- * checks the two agree exactly.
+ * `k = 1 .. side` that meets `l_min`. The kernel is the native
+ * `diagonal_lines` itself: this export only rebuilds the mask as an
+ * `Array2<bool>` and hands the kernel its view, so the browser runs the
+ * same scan the paper used; `scripts/check_wasm_diagnostics.py` checks
+ * the two agree exactly.
  *
  * # Returned layout
  *
@@ -308,6 +634,48 @@ export function diagonal_lines(mask, side, l_min) {
     const ptr0 = passArray8ToWasm0(mask, wasm.__wbindgen_malloc);
     const len0 = WASM_VECTOR_LEN;
     const ret = wasm.diagonal_lines(ptr0, len0, side, l_min);
+    var v2 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v2;
+}
+
+/**
+ * Fractalization attractor tile: the delayed logistic map under this figure's clamps.
+ *
+ * `maps.fractalization.iterate` (`src/dynachaos/maps/fractalization.py:49`) is
+ * the delayed logistic map. This export does not reimplement it: it calls
+ * `delayed_logistic_attractor_tile` after applying the fractalization clamps
+ * (`n_D <= 32`, D in `[1.75, 1.96]`). Python `iterate` passes no
+ * `diverged_fn`. The reused kernel instead treats any `|component| > 1e10`
+ * as divergence and fills that `D` block with NaN.
+ *
+ * # Returned layout
+ *
+ * `[n_D, n_plot, n_transient, 2, x_0, y_0, ...]`, D-major `(x, y)` pairs.
+ * A kernel error returns an empty array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `a`: clamped to `[0, 1]`; a non-finite value falls back to `0.3`.
+ * - `d_min`, `d_max`: clamped to `[1.75, 1.96]`; a non-finite value falls
+ *   back to the matching endpoint.
+ * - `n_D`: clamped to `[1, 32]`; `n_transient` to `[0, 20000]`; `n_plot` to
+ *   `[1, 4096]`, then the pair shrinks to respect the step budget.
+ * - `state0`: the first two entries are used; a missing or non-finite
+ *   component falls back to `0.5`, then every component clamps to `[-4, 4]`.
+ * @param {number} a
+ * @param {number} d_min
+ * @param {number} d_max
+ * @param {number} n_d
+ * @param {number} n_transient
+ * @param {number} n_plot
+ * @param {Float64Array} state0
+ * @returns {Float64Array}
+ */
+export function fractalization_attractor_tile(a, d_min, d_max, n_d, n_transient, n_plot, state0) {
+    const ptr0 = passArrayF64ToWasm0(state0, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.fractalization_attractor_tile(a, d_min, d_max, n_d, n_transient, n_plot, ptr0, len0);
     var v2 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
     wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
     return v2;
@@ -724,17 +1092,70 @@ export function torus_doubling_attractor_tile(map_kind, a, d, n_transient, n_plo
 }
 
 /**
+ * Torus-doubling Lyapunov tile: one spectrum per `D`, map I or map IV.
+ *
+ * This is `lyapunov_spectrum` run on `map_I` or `map_IV` and its Jacobian
+ * (`src/dynachaos/maps/torus_doubling.py:46,63`). The paper sweeps `D` over
+ * `[1.48, 1.53]` for map IV and `[1.9, 2.25]` for map I; the export accepts
+ * their union `[1.48, 2.25]`.
+ *
+ * # Returned layout
+ *
+ * One flat array of `4 + n_D * dim` values:
+ *
+ * - `[0]` = `n_D` actually used.
+ * - `[1]` = `n_transient` actually used.
+ * - `[2]` = `n_iter` actually used, which may be lower than requested when
+ *   the step budget binds.
+ * - `[3]` = the spectrum width: 3 for map I, 4 for map IV.
+ * - `[4 ..]` = the spectra, D-major: `dim` exponents per `D`, largest first.
+ *
+ * Read the header rather than assuming the values you passed were honoured.
+ * A kernel error — impossible after the clamps below — returns an empty
+ * array, never a trap.
+ *
+ * # Clamping
+ *
+ * - `map_kind`: snapped to the nearer of `{1, 4}`: 2 and below is map I,
+ *   3 and above is map IV.
+ * - `a`: clamped to `[0, 1]`; a non-finite value falls back to 0.4.
+ * - `d_min`, `d_max`: clamped to `[1.48, 2.25]`, the union of the paper's
+ *   map-I and map-IV sweeps; a non-finite value falls back to the matching
+ *   endpoint.
+ * - `n_D`: clamped to `[1, 512]`; `n_transient` to `[0, 20000]`; `n_iter`
+ *   to `[1, 200000]`, reduced further to respect the step budget.
+ * - `state0`: the first `dim` entries are used; a missing or non-finite
+ *   component falls back to 0.5, then every component clamps to `[-4, 4]`.
+ * @param {number} map_kind
+ * @param {number} a
+ * @param {number} d_min
+ * @param {number} d_max
+ * @param {number} n_d
+ * @param {number} n_transient
+ * @param {number} n_iter
+ * @param {Float64Array} state0
+ * @returns {Float64Array}
+ */
+export function torus_doubling_lyapunov_tile(map_kind, a, d_min, d_max, n_d, n_transient, n_iter, state0) {
+    const ptr0 = passArrayF64ToWasm0(state0, wasm.__wbindgen_malloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ret = wasm.torus_doubling_lyapunov_tile(map_kind, a, d_min, d_max, n_d, n_transient, n_iter, ptr0, len0);
+    var v2 = getArrayF64FromWasm0(ret[0], ret[1]).slice();
+    wasm.__wbindgen_free(ret[0], ret[1] * 8, 8);
+    return v2;
+}
+
+/**
  * Vertical line lengths of a recurrence matrix (laminarity runs).
  *
  * This is the same estimator `dynachaos.diagnostics.recurrence` runs in
  * Python: `mask` is a row-major `u8` recurrence matrix of `side` rows and
  * `side` columns where any nonzero byte counts as recurrent, and the result
  * is the length of every run of recurrent cells down each column that meets
- * `v_min`. The kernel is the run-length counter `count_line_lengths`; this
- * export gathers each column into a reusable buffer and hands it to that
- * counter, which applies the same run-length rule as
- * the native kernel; `scripts/check_wasm_diagnostics.py` checks the two
- * agree exactly.
+ * `v_min`. The kernel is the native `vertical_lines` itself: this export
+ * only rebuilds the mask as an `Array2<bool>` and hands the kernel its
+ * view, so the browser runs the same scan the paper used;
+ * `scripts/check_wasm_diagnostics.py` checks the two agree exactly.
  *
  * # Returned layout
  *
