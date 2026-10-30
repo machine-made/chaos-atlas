@@ -3,8 +3,6 @@ on:
   workflow_run:
     workflows:
 
-      - "Dependabot auto-merge"
-
       - "CI"
 
       - "React Doctor"
