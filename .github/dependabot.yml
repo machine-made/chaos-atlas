@@ -20,6 +20,11 @@ updates:
       npm-updates:
         patterns:
           - "*"
+    ignore:
+      # typescript-eslint (via eslint-config-next) rejects TypeScript 7:
+      # https://github.com/typescript-eslint/typescript-eslint/issues/10940
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
 
   - package-ecosystem: "pip"
     directory: "/python"
