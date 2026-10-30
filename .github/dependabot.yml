@@ -1,13 +1,13 @@
 version: 2
 updates:
 
-  - package-ecosystem: "pip"
+  - package-ecosystem: "github-actions"
     directory: "/"
     open-pull-requests-limit: 5
     schedule:
       interval: monthly
     groups:
-      pip-updates:
+      github-actions-updates:
         patterns:
           - "*"
 
@@ -21,12 +21,12 @@ updates:
         patterns:
           - "*"
 
-  - package-ecosystem: "github-actions"
-    directory: "/.github/workflows"
+  - package-ecosystem: "pip"
+    directory: "/python"
     open-pull-requests-limit: 5
     schedule:
       interval: monthly
     groups:
-      github-actions-updates:
+      pip-python-updates:
         patterns:
           - "*"
