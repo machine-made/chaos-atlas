@@ -7,9 +7,9 @@ package is what chaos-atlas copies into `vendor/dynachaos-wasm`. See
 
 ## Provenance
 
-- Source: openfluids/dynachaos commit `7100fc476959dafc5c963967d1e02f7b9054f0ab`
-- Built: 2026-09-23 04:19:25 UTC
-- wasm-bindgen: 0.2.128
+- Source: openfluids/dynachaos commit `654eb53a641fc18ca13681119b62e4369e59589d`
+- Built: 2026-10-28 11:32:55 UTC
+- wasm-bindgen: 0.2.129
 - Target: `wasm32-unknown-unknown`, `--target web` with TypeScript declarations
 
 ## Contents
