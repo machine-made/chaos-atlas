@@ -82,7 +82,7 @@ jobs:
 
       # The next two steps copy the setup of the dynachaos "WASM matches
       # native" job, same pins.
-      - uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7 # v10.2.0
+      - uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
       - uses: dtolnay/rust-toolchain@4cda84d5c5c54efe2404f9d843567869ab1699d4 # stable @ 2026-07-26
         with:
           targets: wasm32-unknown-unknown
